@@ -1,4 +1,4 @@
-const version = '2.35.5+546';
+const version = '2.35.6+547';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -290,7 +290,8 @@ var Chat = {
                 ['itsbandorax', 'webp', [3, 2, 1]],
                 ['styles', 'webp', [3, 2, 1]],
                 ['truer', 'png', [3, 2, 1]],
-                ['platonicthough', 'png', [3]]
+                ['platonicthough', 'png', [3]],
+                ['grimmmommy', 'png', [3]]
             ].map((badge) => {
                 const [username, ext, sizes] = badge;
                 return [username, new Map(sizes.map((size) => {
