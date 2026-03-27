@@ -1,4 +1,4 @@
-const version = '2.35.7+548';
+const version = '2.35.8+549';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -332,6 +332,7 @@ var Chat = {
                 'murgois',
                 'limitlesslevon',
                 'streamdatabase',
+                'zo0x_',
             ])
         },
         noPersonalEmotes: {
