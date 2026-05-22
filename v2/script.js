@@ -1,4 +1,4 @@
-const version = '2.35.8+549';
+const version = '2.35.9+551';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -259,7 +259,10 @@ var Chat = {
         horizontal: ('horizontal' in $.QueryString ? ($.QueryString.horizontal.toLowerCase() === 'true') : false),
         singleChatter: ('single_chatter' in $.QueryString ? $.QueryString.single_chatter.toLowerCase() : ""),
         show7tvUnlisted: ('show_7tv_unlisted' in $.QueryString ? ($.QueryString.show_7tv_unlisted.toLowerCase() === 'true') : false),
-        ttsReadsChat: false,
+        ttsReadsChat: {
+            enabled: false,
+            bots: false,
+        },
         // Map<name: string, emote: ChatisEmote>
         emotes: new Map(),
         // Map<username: string, Map<name: string, emote: ChatisEmote>>
@@ -999,6 +1002,59 @@ var Chat = {
     },
 
 
+
+    isMessageBotty: function(nick, text) {
+        let bots = [];
+        // Global recognized bots
+        bots.push('streamelements', 'streamlabs', 'nightbot', 'moobot');
+        // Common bots
+        bots.push(
+            'titlechange_bot', 'supibot', 'pajbot', 'huwobot',
+            'thepositivebot', 'kunszgbot', 'vjbotardo', 'feelsokaybot',
+            'fossabot', 'scriptorex'
+        );
+        // Submitted by Linar (@linaryx@twitch.tv)
+        bots.push('oshbt', 'spanixbot', 'potatbotat', 'streamqbot', 'twirapp');
+        // Some channel bots
+        bots.push(
+            // Owner: Weest (@weest@twitch.tv)
+            'roboweest',
+            // Owner: relaxo (@retrorelaxo@twitch.tv)
+            'cvk3',
+        )
+        bots = bots.concat(Chat.info.botNames.split(',').flatMap(s => s.trim().split(' ')));
+        bots = bots.map(username => username.toLowerCase());
+        if (bots.includes(nick))
+            return true;
+
+        let botSubstrings = [];
+        // Common bot prefixes
+        botSubstrings.push('!', '$', 'kb ');
+        // Common bot commands
+        botSubstrings.push('+ed', '+join', '?cookie');
+
+        // let moneyExceptions = [];
+        // // Common bot prefixes
+        // moneyExceptions.push('$8ball', '$9gag');
+
+        let isBot = false;
+
+        for (let i in botSubstrings)
+            if (text.toLowerCase().startsWith(botSubstrings[i])) {
+                isBot = true;
+                // for (let j in moneyExceptions)
+                //     if (text.toLowerCase().startsWith(moneyExceptions[j]))
+                //         cancelMessage = true;
+                if (text.toLowerCase().charAt(0) === '$')
+                    if (!isNaN(parseFloat(text.toLowerCase().split(' ')[0].substr(1)))) {
+                        isBot = false;
+                        break;
+                    }
+                break;
+            }
+
+        return isBot;
+    },
 
     initFlags: function () {
         // See https://github.com/IS2511/ChatIS/issues/16#issuecomment-2745986759
@@ -2050,7 +2106,7 @@ var Chat = {
         setTimeout(f, 1000);
     },
 
-    parseCommand: function(message, defaultToCurrentChannel = true) {
+    parseCommand: function(message, text, defaultToCurrentChannel = true) {
 
         /*
 ⣿⣿⣿⣿⣿⣿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿
@@ -2070,7 +2126,6 @@ var Chat = {
         */
 
         let nick = message.prefix.split('@')[0].split('!')[0];
-        let text = message.params[1];
 
         let channelParamMatch = text.match(/ -c ([\S\d_]+)/);
         if (channelParamMatch)
@@ -2440,17 +2495,20 @@ var Chat = {
                     case 'tts-reads-chat': {
                         if (!isThisOverlayVisible()) return;
                         if (accessLevel < 1000) return;
+                        let bots = (text.match(/ --(bots)/) || [])[1] || false;
 
                         if (args[2] === 'on') {
-                            Chat.info.ttsReadsChat = true;
+                            Chat.info.ttsReadsChat.enabled = true;
+                            Chat.info.ttsReadsChat.bots = bots;
                         } else if (args[2] === 'off') {
-                            Chat.info.ttsReadsChat = false;
+                            Chat.info.ttsReadsChat.enabled = false;
+                            Chat.info.ttsReadsChat.bots = false;
                         } else {
-                            Chat.info.ttsReadsChat = !Chat.info.ttsReadsChat;
+                            Chat.info.ttsReadsChat.enabled = !Chat.info.ttsReadsChat.enabled;
                         }
                     } break;
                     case 'tts': {
-                        if (Chat.info.ttsReadsChat)
+                        if (Chat.info.ttsReadsChat.enabled)
                             accessLevel = 500;
                         if (!isThisOverlayVisible()) return;
                         // if (Chat.info.channel.toLowerCase() === 'mmattbtw') accessLevel = 500;
@@ -2779,75 +2837,22 @@ var Chat = {
 
                             let nick = message.prefix.split('@')[0].split('!')[0];
                             let text = message.params[1];
+                            let commandText = text;
+                            let isMessageBotty = Chat.isMessageBotty(nick.toLowerCase(), text);
 
                             Chat.cache.badges[nick.toLowerCase()] = message.tags.badges;
 
-                            let madeTts = false;
-                            if (Chat.info.ttsReadsChat) {
-                                if (!text.startsWith('!chatis ')) {
-                                    text = '!chatis tts ' + text;
-                                    message.params[1] = text;
-                                    madeTts = true;
-                                }
+                            if (Chat.info.ttsReadsChat.enabled
+                                && (Chat.info.ttsReadsChat.bots || !isMessageBotty)
+                                && !text.startsWith('!chatis ')
+                            ) {
+                                commandText = '!chatis tts ' + text;
                             }
 
-                            Chat.parseCommand(message);
+                            Chat.parseCommand(message, commandText);
 
-                            if (madeTts) {
-                                text = text.substr('!chatis tts '.length);
-                                message.params[1] = text;
-                            }
-
-                            if (!Chat.info.bots) {
-                                let bots = [];
-                                // Global recognised bots
-                                bots.push('streamelements', 'streamlabs', 'nightbot', 'moobot');
-                                // Common bots
-                                bots.push('titlechange_bot', 'supibot', 'pajbot', 'huwobot',
-                                    'thepositivebot', 'kunszgbot', 'vjbotardo', 'feelsokaybot',
-                                    'fossabot', 'scriptorex');
-                                // Submitted by Linar (@linaryx@twitch.tv)
-                                bots.push('oshbt', 'spanixbot', 'potatbotat', 'streamqbot', 'twirapp');
-                                // Some channel bots
-                                bots.push(
-                                    // Owner: Weest (@weest@twitch.tv)
-                                    'roboweest',
-                                    // Owner: relaxo (@retrorelaxo@twitch.tv)
-                                    'cvk3'
-                                )
-                                bots = bots.concat(Chat.info.botNames.split(',').flatMap(s => s.trim().split(' ')));
-                                bots = bots.map(username => username.toLowerCase());
-                                if (bots.includes(nick)) return;
-
-                                let botSubstrings = [];
-                                // Common bot prefixes
-                                botSubstrings.push('!', '$', 'kb ');
-                                // Common bot commands
-                                botSubstrings.push('+ed', '+join', '?cookie');
-
-                                // let moneyExceptions = [];
-                                // // Common bot prefixes
-                                // moneyExceptions.push('$8ball', '$9gag');
-
-                                let cancelMessage = false;
-
-                                for (let i in botSubstrings)
-                                    if (message.params[1].toLowerCase().startsWith(botSubstrings[i])) {
-                                        cancelMessage = true;
-                                        // for (let j in moneyExceptions)
-                                        //     if (message.params[1].toLowerCase().startsWith(moneyExceptions[j]))
-                                        //         cancelMessage = true;
-                                        if (message.params[1].toLowerCase().charAt(0) === '$')
-                                            if (!isNaN(parseFloat(message.params[1].toLowerCase().split(' ')[0].substr(1)))) {
-                                                cancelMessage = false;
-                                                break;
-                                            }
-                                        break;
-                                    }
-
-                                if (cancelMessage) return;
-
-                            }
+                            if (!Chat.info.bots && isMessageBotty)
+                                return;
 
                             if (!Chat.info.hideSpecialBadges) {
                                 if (Chat.info.bttvBadges
@@ -2911,7 +2916,7 @@ Chat.connectForCommands = function(channel) {
                     // if (channelParam.toLowerCase() === channel.toLowerCase()) {
                     //     Chat.parseCommand(message);
                     // }
-                    Chat.parseCommand(message, false);
+                    Chat.parseCommand(message, message.params[1], false);
 
                     return;
             }
