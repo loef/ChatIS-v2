@@ -1595,7 +1595,7 @@ var Chat = {
             Chat.info.chatterinoBadges.forEach(badge => {
                 console.debug("[ChatIS][badge] Checking Chatterino badge kind", badge.tooltip);
                 badge.users.forEach(user => {
-                    console.debug("[ChatIS][badge] Chatterino badge", badge);
+                    // console.debug("[ChatIS][badge] Chatterino badge", badge);
                     if (user === userId) {
                         var userBadge = {
                             source: 'chatterino',
