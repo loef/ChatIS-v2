@@ -1,4 +1,4 @@
-const version = '2.35.9+551';
+const version = '2.35.10+552';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -1821,7 +1821,7 @@ var Chat = {
                     });
                 }
             } else {
-                // Adding :tf: badge
+                // Add :tf: badge
                 if (nick.toLowerCase() === 'is2511') {
                     let $badge = $('<img/>');
                     $badge.addClass('badge');
@@ -1830,8 +1830,12 @@ var Chat = {
                     $userInfo.append($badge);
                 }
 
-                // eslint-disable-next-line no-prototype-builtins
-                if ((Chat.cache.globalMods.includes(nick.toLowerCase()) || Chat.info.chatisBadges.userBadges.has(nick.toLowerCase())) && nick.toLowerCase() !== 'is2511') {
+                // Add a ChatIS badge if user is a global ChatIS mod or has a custom ChatIS badge, excluding is2511 and bots
+                if (
+                    (Chat.cache.globalMods.includes(nick.toLowerCase()) || Chat.info.chatisBadges.userBadges.has(nick.toLowerCase()))
+                    && nick.toLowerCase() !== 'is2511'
+                    && !Chat.isMessageBotty(nick, "")
+                ) {
                     let $badge = $('<img/>');
                     $badge.addClass('badge');
                     // if (badge.color) $badge.css('background-color', badge.color);
