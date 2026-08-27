@@ -1,4 +1,4 @@
-const version = '2.35.11+553';
+const version = '2.35.12+554';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -34,6 +34,32 @@ const obsVersion = obsVersionStr ? parseSemver(obsVersionStr) : null;
         return params;
     })(window.location.search.substr(1).split('&'))
 })(jQuery);
+
+const queryString = new URLSearchParams(window.location.search);
+function getQueryParam(name, parser = (s) => s, defaultValue = null) {
+    const value = queryString.get(name);
+    if (value === null) return defaultValue;
+    const parsedValue = parser(value);
+    // TODO: Probably show a warning - user input is malformed
+    if (parsedValue === null) return defaultValue;
+    return parsedValue;
+}
+
+function parseFloatOrNull(s) {
+    const parsed = parseFloat(s);
+    return isNaN(parsed) ? null : parsed;
+}
+function parseIntOrNull(s, radix = null) {
+    const parsed = parseInt(s, radix);
+    return isNaN(parsed) ? null : parsed;
+}
+function parseBooleanOrNull(s) {
+    switch (s.toLowerCase()) {
+        case 'true': return true;
+        case 'false': return false;
+        default: return null;
+    }
+}
 
 function escapeRegExp(string) { // Thanks to coolaj86 and Darren Cook (https://stackoverflow.com/a/6969486)
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -345,6 +371,12 @@ var Chat = {
                 'xqc',
             ]),
         },
+        dynamicEmoteScale: getQueryParam('dynamicEmoteScale', parseBooleanOrNull, false),
+        dynamicEmoteScales: new Map([
+            ['regular', getQueryParam('desRegular', parseFloatOrNull, 1  )],
+            ['multi',   getQueryParam('desMulti',   parseFloatOrNull, 1.5)],
+            ['single',  getQueryParam('desSingle',  parseFloatOrNull, 3  )],
+        ]),
         cheers: {},
         lines: []
     },
@@ -1056,6 +1088,33 @@ var Chat = {
         return isBot;
     },
 
+    baseEmoteHeight: function (size = Chat.info.size) {
+        // Values from the CSS sheet
+        switch (size) {
+            case 1: return 25;
+            case 2: return 42;
+            default:
+            case 3: return 60;
+        }
+    },
+    baseEmoteWidth: function (size = Chat.info.size) {
+        // Values from the CSS sheet
+        switch (size) {
+            case 1: return 75;
+            case 2: return 128;
+            default:
+            case 3: return 180;
+        }
+    },
+    calcEmoteSize: function (dynamicEmoteScaleClass = 'regular', dynamicScales = Chat.info.dynamicEmoteScales, scale = Chat.info.emoteScale, chatSize = Chat.info.size) {
+        let dynamicScale = dynamicScales.get(dynamicEmoteScaleClass) || 1;
+        return {
+            class: dynamicEmoteScaleClass,
+            height: Chat.baseEmoteHeight(chatSize) * scale * dynamicScale,
+            width: Chat.baseEmoteWidth(chatSize) * scale * dynamicScale,
+        };
+    },
+
     initFlags: function () {
         // See https://github.com/IS2511/ChatIS/issues/16#issuecomment-2745986759
         Chat.flags.usingHackyStrokeViaShadow = true;
@@ -1318,22 +1377,23 @@ var Chat = {
 
             // emoteScale
             if (Chat.info.emoteScale !== 1) {
-                let emoteHeight;
-                switch (Chat.info.size) {
-                    case 1:
-                        emoteHeight = 25;
-                        break;
-                    case 2:
-                        emoteHeight = 42;
-                        break;
-                    case 3:
-                        emoteHeight = 60;
-                        break;
-                }
-                let style = $(`<style>#chat_container .emote { max-height: ${emoteHeight * Chat.info.emoteScale}px; }</style>`);
+                let emoteSize = Chat.calcEmoteSize();
+                let style = $(`<style>#chat_container .emote { max-height: ${emoteSize.height}px; max-width: ${emoteSize.width}px; }</style>`);
                 $('html > head').append(style);
             }
 
+            // TODO: Dynamic emote scales CSS
+            // if (Chat.info.dynamicEmoteScale) {
+            //     for (const emoteScaleClass in Chat.info.dynamicEmoteScales) {
+            //         let emoteSize = Chat.calcEmoteSize(emoteScaleClass);
+            //         $('html > head').append(
+            //             $(`<style>#chat_container .emote.des-${emoteSize.class} {
+            //                 max-height: ${emoteSize.height}px;
+            //                 max-width: ${emoteSize.width}px;
+            //             }</style>`)
+            //         );
+            //     }
+            // }
 
 
             if (Chat.info.smallCaps) {
