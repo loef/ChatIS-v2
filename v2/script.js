@@ -1,4 +1,4 @@
-const version = '2.35.10+552';
+const version = '2.35.11+553';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -2008,8 +2008,9 @@ var Chat = {
             });
 
             message = escapeHtml(message);
-            message = DOMPurify.sanitize(message);
-            if (Chat.info.markdown) { // TODO: fix
+            if ((typeof(DOMPurify) !== "undefined") && ('sanitize' in DOMPurify))
+                message = DOMPurify.sanitize(message);
+            // if (Chat.info.markdown) {
                 // const renderer = {
                 //     image(href, title, text) {
                 //         const escapedText = text.toLowerCase().replace(/[^\w]+/g, '-');
@@ -2022,7 +2023,7 @@ var Chat = {
                 //     message = message.substr(3);
                 //     message = message.substr(0, (message.length-1) - 4);
                 // }
-            }
+            // }
 
             if (info.bits && parseInt(info.bits) > 0) {
                 var bits = parseInt(info.bits);
