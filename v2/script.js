@@ -1,4 +1,4 @@
-const version = '2.35.12+554';
+const version = '2.35.13+555';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -2146,6 +2146,20 @@ var Chat = {
 
             message = twemoji.parse(message);
             $message.html(message);
+
+            // Dynamic emote scale CSS classes
+            {
+                const hasText = $message.text().trim().length > 0;
+                const imageCount = $message.find('img').length;
+                if (hasText) {
+                    $message.addClass('des-regular');
+                } else if (imageCount === 1) {
+                    $message.addClass('des-single');
+                } else if (imageCount > 1) {
+                    $message.addClass('des-multiple');
+                }
+            }
+
             $chatLine.append($message);
             Chat.info.lines.push($chatLine.wrap('<div>').parent().html());
         }
