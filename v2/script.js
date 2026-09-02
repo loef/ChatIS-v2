@@ -1386,8 +1386,9 @@ var Chat = {
             // if (Chat.info.dynamicEmoteScale) {
             //     for (const emoteScaleClass in Chat.info.dynamicEmoteScales) {
             //         let emoteSize = Chat.calcEmoteSize(emoteScaleClass);
+            //         // TODO: For des-single insert newline after `:` via CSS
             //         $('html > head').append(
-            //             $(`<style>#chat_container .emote.des-${emoteSize.class} {
+            //             $(`<style>#chat_container .message.des-${emoteSize.class} {
             //                 max-height: ${emoteSize.height}px;
             //                 max-width: ${emoteSize.width}px;
             //             }</style>`)
