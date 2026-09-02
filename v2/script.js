@@ -1,4 +1,4 @@
-const version = '2.35.13+555';
+const version = '2.35.14+557';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -1801,6 +1801,8 @@ var Chat = {
     write: function(nick, info, message) {
         // Chat.cache.badges[nick.toLowerCase()] = info.badges;
 
+        let gifs = [];
+
         // TODO: Make this a Map?
         let roles = {
             mod: false,
@@ -1843,6 +1845,16 @@ var Chat = {
                     if (badge_to_role[badge_name]) {
                         roles[badge_to_role[badge_name]] = true;
                     }
+                });
+            }
+
+            if (typeof(info.gifs) === 'string') {
+                gifs = info.gifs.split(',').map(gif => {
+                    const [bounds, id, url] = gif.split('|');
+                    let [start, end] = bounds.split('-');
+                    start = parseInt(start);
+                    end = parseInt(end);
+                    return { start, end, id, url };
                 });
             }
         }
@@ -2085,6 +2097,14 @@ var Chat = {
                 //     message = message.substr(0, (message.length-1) - 4);
                 // }
             // }
+
+            // TODO: Slice points are most certainly misaligned after escapeHtml() and similar,
+            //       this has to be done before any message string manipulation...
+            //       Only fine because right now Twitch restricts users to one GIF per message with no other contents.
+            for (const gif of gifs) {
+                const img = `<img class="gif" src="${gif.url}" data-id="${gif.id}" />`;
+                message = message.slice(0, gif.start) + img + message.slice(gif.end + 1);
+            }
 
             if (info.bits && parseInt(info.bits) > 0) {
                 var bits = parseInt(info.bits);
