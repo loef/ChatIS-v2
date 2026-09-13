@@ -40,8 +40,11 @@ function getQueryParam(name, parser = (s) => s, defaultValue = null) {
     const value = queryString.get(name);
     if (value === null) return defaultValue;
     const parsedValue = parser(value);
-    // TODO: Probably show a warning - user input is malformed
-    if (parsedValue === null) return defaultValue;
+    // TODO: Probably show a warning on screen - user input is malformed
+    if (parsedValue === null) {
+        console.warn(`[ChatIS] Failed to parse URL query param '${name}', falling back to default:`, defaultValue);
+        return defaultValue;
+    }
     return parsedValue;
 }
 
