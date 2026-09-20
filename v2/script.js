@@ -1,4 +1,4 @@
-const version = '2.35.15+559';
+const version = '2.35.16+561';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -19,8 +19,10 @@ const obsVersion = obsVersionStr ? parseSemver(obsVersionStr) : null;
 
 const queryString = new URLSearchParams(window.location.search);
 function getQueryParam(name, parser = (s) => s, defaultValue = null) {
-    const value = queryString.get(name);
-    if (value === null) return defaultValue;
+    // Why not `.get()`? It returns first value, we need the last value (backwards compatibility)
+    const allValues = queryString.getAll(name);
+    if (allValues.length === 0) return defaultValue;
+    const value = allValues[allValues.length - 1];
     const parsedValue = parser(value);
     // TODO: Probably show a warning on screen - user input is malformed
     if (parsedValue === null) {
