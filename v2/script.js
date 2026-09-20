@@ -1,4 +1,4 @@
-const version = '2.35.16+561';
+const version = '2.35.16+562';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -2165,12 +2165,12 @@ var Chat = {
             // Dynamic emote scale CSS classes
             {
                 const hasText = $message.text().trim().length > 0;
-                const imageCount = $message.find('img').length;
+                const emoteCount = $message.find('.emote').length;
                 if (hasText) {
                     $message.addClass('des-regular');
-                } else if (imageCount === 1) {
+                } else if (emoteCount === 1) {
                     $message.addClass('des-single');
-                } else if (imageCount > 1) {
+                } else if (emoteCount > 1) {
                     $message.addClass('des-multiple');
                 }
             }
