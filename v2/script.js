@@ -1990,9 +1990,14 @@ var Chat = {
             // if (Chat.info.seventvPaints) {
             {
                 let paintCSS = Chat.calcPaintsCSS(nick);
-                if (paintCSS)
+                if (paintCSS) {
                     for (let [key, value] of entries(paintCSS))
                         $username.attr('style', $username.attr('style') + `${key}: ${value};`)
+
+                    // $username[0].style.setProperty("--chatis-v2-username-has-7tv-paint", "true");
+                    // if (paintCSS['color'])
+                    //     $username[0].style.setProperty("--chatis-v2-7tv-username-color", paintCSS['color']);
+                }
             }
             $userInfo.append($username);
 
