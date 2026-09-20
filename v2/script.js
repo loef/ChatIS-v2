@@ -1784,6 +1784,8 @@ var Chat = {
     },
 
     write: function(nick, info, message) {
+        console.debug("[ChatIS][IRC] Message", { username: nick, message, tags: info });
+
         // Chat.cache.badges[nick.toLowerCase()] = info.badges;
 
         let gifs = [];
