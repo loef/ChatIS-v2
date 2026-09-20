@@ -1,4 +1,4 @@
-const version = '2.35.14+557';
+const version = '2.35.15+559';
 
 function* entries(obj) {
     for (let key of Object.keys(obj)) {
@@ -16,24 +16,6 @@ const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth
 const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
 const obsVersionStr = (navigator.userAgent.match(/OBS\/([^\s]+)/) || [])[1];
 const obsVersion = obsVersionStr ? parseSemver(obsVersionStr) : null;
-
-(function($) { // Thanks to BrunoLM (https://stackoverflow.com/a/3855394)
-    $.QueryString = (function(paramsArray) {
-        let params = {};
-
-        for (let i = 0; i < paramsArray.length; ++i) {
-            let param = paramsArray[i]
-                .split('=', 2);
-
-            if (param.length !== 2)
-                continue;
-
-            params[param[0]] = decodeURIComponent(param[1].replace(/\+/g, " "));
-        }
-
-        return params;
-    })(window.location.search.substr(1).split('&'))
-})(jQuery);
 
 const queryString = new URLSearchParams(window.location.search);
 function getQueryParam(name, parser = (s) => s, defaultValue = null) {
@@ -57,6 +39,7 @@ function parseIntOrNull(s, radix = null) {
     return isNaN(parsed) ? null : parsed;
 }
 function parseBooleanOrNull(s) {
+    // Maybe remove `.toLowerCase()`? Backwards compatibility though :shrug:
     switch (s.toLowerCase()) {
         case 'true': return true;
         case 'false': return false;
@@ -264,30 +247,28 @@ var Chat = {
     info: {
         channelID: null,
         channel: null,
-        animate: ('animate' in $.QueryString ? ($.QueryString.animate.toLowerCase() === 'true') : false),
-        bots: ('bots' in $.QueryString ? ($.QueryString.bots.toLowerCase() === 'true') : false),
-        hideSpecialBadges: ('hide_special_badges' in $.QueryString ?
-            ($.QueryString.hide_special_badges.toLowerCase() === 'true') : false),
-        showHomies: ('show_homies' in $.QueryString ?
-            ($.QueryString.show_homies.toLowerCase() === 'true') : false),
-        fade: ('fade' in $.QueryString ? parseInt($.QueryString.fade) : false),
-        size: ('size' in $.QueryString ? parseInt($.QueryString.size) : 3),
-        font: ('font' in $.QueryString ? parseInt($.QueryString.font) : 0),
-        fontCustom: ('fontCustom' in $.QueryString ? $.QueryString.fontCustom : ""),
-        stroke: ('stroke' in $.QueryString ? parseInt($.QueryString.stroke) : false),
-        shadow: ('shadow' in $.QueryString ? parseInt($.QueryString.shadow) : false),
-        emoteScale: ('emoteScale' in $.QueryString ? parseFloat($.QueryString.emoteScale) : 1),
-        smallCaps: ('small_caps' in $.QueryString ? ($.QueryString.small_caps.toLowerCase() === 'true') : false),
-        nlAfterName: ('nl_after_name' in $.QueryString ? ($.QueryString.nl_after_name.toLowerCase() === 'true') : false),
-        hideNames: ('hide_names' in $.QueryString ? ($.QueryString.hide_names.toLowerCase() === 'true') : false),
-        markdown: ('markdown' in $.QueryString ? ($.QueryString.markdown.toLowerCase() === 'true') : false),
-        md_image: ('md_image' in $.QueryString ? ($.QueryString.md_image) : false),
-        botNames: ('botNames' in $.QueryString ? $.QueryString.botNames : ""),
-        lastEmoteBackground: ('last_emote_background' in $.QueryString ? ($.QueryString.last_emote_background.toLowerCase() === 'true') : false),
-        reverseLineOrder: ('reverse_line_order' in $.QueryString ? ($.QueryString.reverse_line_order.toLowerCase() === 'true') : false),
-        horizontal: ('horizontal' in $.QueryString ? ($.QueryString.horizontal.toLowerCase() === 'true') : false),
-        singleChatter: ('single_chatter' in $.QueryString ? $.QueryString.single_chatter.toLowerCase() : ""),
-        show7tvUnlisted: ('show_7tv_unlisted' in $.QueryString ? ($.QueryString.show_7tv_unlisted.toLowerCase() === 'true') : false),
+        animate: getQueryParam('animate', parseBooleanOrNull, false),
+        bots: getQueryParam('bots', parseBooleanOrNull,  false),
+        hideSpecialBadges: getQueryParam('hide_special_badges', parseBooleanOrNull, false),
+        showHomies: getQueryParam('show_homies', parseBooleanOrNull, false),
+        fade: getQueryParam('fade', parseIntOrNull, false),
+        size: getQueryParam('size', parseIntOrNull, 3),
+        font: getQueryParam('font', parseIntOrNull, 0),
+        fontCustom: getQueryParam('fontCustom'),
+        stroke: getQueryParam('stroke', parseIntOrNull, false),
+        shadow: getQueryParam('shadow', parseIntOrNull, false),
+        emoteScale: getQueryParam('emoteScale', parseFloatOrNull, 1),
+        smallCaps: getQueryParam('small_caps', parseBooleanOrNull, false),
+        nlAfterName: getQueryParam('nl_after_name', parseBooleanOrNull, false),
+        hideNames: getQueryParam('hide_names', parseBooleanOrNull, false),
+        markdown: getQueryParam('markdown', parseBooleanOrNull, false),
+        botNames: getQueryParam('botNames'),
+        lastEmoteBackground: getQueryParam('last_emote_background', parseBooleanOrNull, false),
+        reverseLineOrder: getQueryParam('reverse_line_order', parseBooleanOrNull, false),
+        horizontal: getQueryParam('horizontal', parseBooleanOrNull, false),
+        singleChatter: getQueryParam('single_chatter', (s) => s.toLowerCase()),
+        show7tvUnlisted: getQueryParam('show_7tv_unlisted', parseBooleanOrNull, false),
+
         ttsReadsChat: {
             enabled: false,
             bots: false,
@@ -1057,7 +1038,8 @@ var Chat = {
             // Owner: relaxo (@retrorelaxo@twitch.tv)
             'cvk3',
         )
-        bots = bots.concat(Chat.info.botNames.split(',').flatMap(s => s.trim().split(' ')));
+        if (Chat.info.botNames)
+            bots = bots.concat(Chat.info.botNames.split(',').flatMap(s => s.trim().split(' ')));
         bots = bots.map(username => username.toLowerCase());
         if (bots.includes(nick))
             return true;
@@ -1333,7 +1315,7 @@ var Chat = {
                     href: `styles/font_${styleSettingsMap.font[Chat.info.font - 1]}.css`
                 }).appendTo("head");
             else
-                if (Chat.info.fontCustom !== "")
+                if (Chat.info.fontCustom !== null)
                     $("#chat_container").attr('style', `font-family: "${Chat.info.fontCustom}";`)
                 else
                     $("<link/>", {
@@ -2356,8 +2338,8 @@ var Chat = {
                     case 'ping': {
                         if (accessLevel < 500) return;
                         // Chat.write('[ChatIS]', {}, 'Pong! v' + version);
-                        let rng = window.location.href.match(/&random=([0-9]*)/);
-                        showFloat(1, 'Pong!\nChatIS v' + version + (rng ? ("\nrandom: " + rng[1]) : ''));
+                        let rng = getQueryParam('random', parseIntOrNull);
+                        showFloat(1, `Pong!\nChatIS v${version}` + (rng ? `\nrandom: ${rng}` : ''));
                     }
                         break;
                     case 'link': {
@@ -2375,9 +2357,6 @@ var Chat = {
                     case 'reload': {
                         if (accessLevel < 500) return;
                         console.info("[ChatIS][CMD] Reloading page...");
-                        // let href = window.location.href.replace(/&random=[0-9]*/g, "")
-                        // href += '&random=' + Math.floor(Math.random()*1e8);
-                        // window.location = href;
                         // TODO: Add option to force cache drop for all resources
                         window.location.reload(true);
                     }
@@ -3057,11 +3036,13 @@ Chat.reloadCosmetics = (msgExtra = '') => {
 
 
 $(document).ready(function() {
-    Chat.connect($.QueryString.channel ? $.QueryString.channel.toLowerCase() : 'xqc');
-    if ($.QueryString.channel.toLowerCase() !== 'is2511')
+    const channel = getQueryParam('channel', (s) => s.toLowerCase());
+    Chat.connect(channel || 'xqc');
+    if ((channel !== null) && (channel !== 'is2511'))
         Chat.connectForCommands('is2511');
-    let rng = window.location.href.match(/&random=([0-9]*)/);
+
     console.info(`[ChatIS] Loading... v${version}`);
-    showFloat(1, 'ChatIS v' + version
-        + (rng ? ("\nrandom: " + rng[1]) : ''), 5*1000);
+
+    let rng = getQueryParam('random', parseIntOrNull);
+    showFloat(1, `ChatIS v${version}` + (rng ? `\nrandom: ${rng}` : ''), 5*1000);
 });
